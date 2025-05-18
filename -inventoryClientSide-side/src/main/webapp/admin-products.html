@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Products - Admin Dashboard</title>
+    <script src="https://unpkg.com/@tailwindcss/browser@4"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+</head>
+
+<body class="min-h-screen bg-gradient-to-br from-blue-200 to-purple-400 text-white font-sans">
+    <!-- Navbar -->
+    <nav class="bg-slate-900 flex items-center justify-between px-8 py-4 shadow-lg">
+        <div class="text-2xl font-semibold text-white">Admin Panel</div>
+        <div class="flex items-center gap-4">
+            <a href="make-purchase.html"
+                class="rounded-full bg-white text-indigo-700 px-4 py-2 flex items-center gap-2 cursor-pointer hover:bg-indigo-100 no-underline">
+                <i data-lucide="shopping-bag"></i>
+                <span class="font-medium">Make Purchase</span>
+            </a>
+            <a href="invoices.html"
+                class="rounded-full bg-white text-indigo-700 px-4 py-2 flex items-center gap-2 cursor-pointer hover:bg-indigo-100 no-underline">
+                <i data-lucide="file-text"></i>
+                <span class="font-medium">Invoices</span>
+            </a>
+            <a href="admin-products.html"
+                class="rounded-full bg-white text-indigo-700 px-4 py-2 flex items-center gap-2 cursor-pointer hover:bg-indigo-100 no-underline">
+                <i data-lucide="package"></i>
+                <span class="font-medium">Product</span>
+            </a>
+            <a href="vendors.html"
+                class="rounded-full bg-white text-indigo-700 px-4 py-2 flex items-center gap-2 cursor-pointer hover:bg-indigo-100 no-underline">
+                <i data-lucide="store"></i>
+                <span class="font-medium">Vendor</span>
+            </a>
+            <a href="#" onclick="logout()"
+                class="rounded-full bg-white text-indigo-700 px-4 py-2 flex items-center gap-2 cursor-pointer hover:bg-indigo-100 no-underline">
+                <i data-lucide="log-out"></i>
+                <span class="font-medium">Logout</span>
+            </a>
+        </div>
+    </nav>
+
+    <!-- Sidebar + Content -->
+    <div class="flex p-10 gap-8">
+        <div class="w-56 bg-slate-900 text-indigo-300 p-6 rounded-2xl shadow-lg">
+            <h3 class="text-white text-xl font-semibold mb-6">Product Operations</h3>
+            <button onclick="openAddProductModal()"
+                class="w-full rounded-full bg-indigo-100 text-indigo-700 py-2 mb-4 font-medium hover:bg-indigo-200 transition duration-200">➕ Add
+                Product</button>
+            <button onclick="editProduct()"
+                class="w-full rounded-full bg-indigo-100 text-indigo-700 py-2 mb-4 font-medium hover:bg-indigo-200 transition duration-200">✏️ Edit
+                Product</button>
+            <button onclick="deleteProduct()"
+                class="w-full rounded-full bg-indigo-100 text-indigo-700 py-2 mb-4 font-medium hover:bg-indigo-200 transition duration-200">🗑️ Delete
+                Product</button>
+            <button onclick="viewProducts()"
+                class="w-full rounded-full bg-indigo-100 text-indigo-700 py-2 font-medium hover:bg-indigo-200 transition duration-200">📋 View
+                Products</button>
+        </div>
+
+        <div class="flex-1 bg-slate-900 text-indigo-300 p-6 rounded-2xl shadow-lg">
+            <h2 class="text-white text-xl font-semibold mb-6">Product List</h2>
+            <table class="w-full border-collapse">
+                <thead>
+                    <tr class="bg-[#333A5c]">
+                        <th class="p-3 text-left text-white text-sm font-semibold">ID</th>
+                        <th class="p-3 text-left text-white text-sm font-semibold">Name</th>
+                        <th class="p-3 text-left text-white text-sm font-semibold">Description</th>
+                        <th class="p-3 text-left text-white text-sm font-semibold">Price</th>
+                        <th class="p-3 text-left text-white text-sm font-semibold">Quantity</th>
+                        <th class="p-3 text-left text-white text-sm font-semibold">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="productTableBody">
+                    <!-- Data will be loaded dynamically -->
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Edit Product Modal -->
+        <div id="editProductModal" class="fixed inset-0 bg-black bg-opacity-50 hidden justify-center items-center z-50">
+            <div class="bg-slate-900 text-indigo-300 w-full max-w-md p-8 rounded-2xl shadow-lg relative">
+                <span class="absolute top-4 right-4 text-white text-2xl cursor-pointer"
+                    onclick="closeEditProductModal()">&times;</span>
+                <h2 class="text-white text-xl font-semibold mb-6">Edit Product</h2>
+                <form id="editProductForm">
+                    <input type="hidden" name="id" />
+                    <label class="text-sm text-indigo-300">Name:</label><br />
+                    <input type="text" name="name"
+                        class="w-full rounded-full px-4 py-2 text-sm text-white bg-[#333A5c] border-none outline-none mb-4"
+                        required /><br />
+                    <label class="text-sm text-indigo-300">Description:</label><br />
+                    <input type="text" name="description"
+                        class="w-full rounded-full px-4 py-2 text-sm text-white bg-[#333A5c] border-none outline-none mb-4"
+                        required /><br />
+                    <label class="text-sm text-indigo-300">Price:</label><br />
+                    <input type="number" name="price" step="0.01"
+                        class="w-full rounded-full px-4 py-2 text-sm text-white bg-[#333A5c] border-none outline-none mb-4"
+                        required /><br />
+                    <label class="text-sm text-indigo-300">Quantity:</label><br />
+                    <input type="hidden" name="vendorId" />
+                    <input type="number" name="quantity"
+                        class="w-full rounded-full px-4 py-2 text-sm text-white bg-[#333A5c] border-none outline-none mb-4"
+                        required /><br />
+                    <button type="submit"
+                        class="w-full rounded-full bg-gradient-to-r from-indigo-400 to-indigo-900 py-2 font-medium tracking-wide text-white hover:opacity-90">Update</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Add Product Modal -->
+        <div id="addProductModal" class="fixed inset-0 bg-black bg-opacity-50 hidden justify-center items-center z-50">
+            <div class="bg-slate-900 text-indigo-300 w-full max-w-md p-8 rounded-2xl shadow-lg relative">
+                <span class="absolute top-4 right-4 text-white text-2xl cursor-pointer"
+                    onclick="closeAddProductModal()">&times;</span>
+                <h2 class="text-white text-xl font-semibold mb-6">Add Product</h2>
+                <form id="addProductForm">
+                    <label class="text-sm text-indigo-300">Name:</label><br />
+                    <input type="text" name="name"
+                        class="w-full rounded-full px-4 py-2 text-sm text-white bg-[#333A5c] border-none outline-none mb-4"
+                        required /><br />
+                    <label class="text-sm text-indigo-300">Description:</label><br />
+                    <input type="text" name="description"
+                        class="w-full rounded-full px-4 py-2 text-sm text-white bg-[#333A5c] border-none outline-none mb-4"
+                        required /><br />
+                    <label class="text-sm text-indigo-300">Price:</label><br />
+                    <input type="number" name="price" step="0.01"
+                        class="w-full rounded-full px-4 py-2 text-sm text-white bg-[#333A5c] border-none outline-none mb-4"
+                        required /><br />
+                    <label class="text-sm text-indigo-300">Quantity:</label><br />
+                    <input type="number" name="quantity"
+                        class="w-full rounded-full px-4 py-2 text-sm text-white bg-[#333A5c] border-none outline-none mb-4"
+                        required /><br />
+                    <label class="text-sm text-indigo-300">Vendor:</label><br />
+                    <select name="vendorId"
+                        class="w-full rounded-full px-4 py-2 text-sm text-white bg-[#333A5c] border-none outline-none mb-4"
+                        required>
+                        <option value="" disabled selected>Select Vendor</option>
+                        <!-- Vendors will be loaded dynamically -->
+                    </select><br />
+                    <button type="submit"
+                        class="w-full rounded-full bg-gradient-to-r from-indigo-400 to-indigo-900 py-2 font-medium tracking-wide text-white hover:opacity-90">Add
+                        Product</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        if (localStorage.getItem("isAdmin") !== "true") {
+            window.location.href = "index.html";
+        }
+
+        function logout() {
+            localStorage.removeItem("isAdmin");
+            alert("Logged out successfully.");
+            window.location.href = "index.html";
+        }
+
+        lucide.createIcons();
+
+        async function loadProducts() {
+            try {
+                const response = await fetch('http://localhost:3010/api/items');
+                const products = await response.json();
+
+                const tbody = document.getElementById('productTableBody');
+                tbody.innerHTML = '';
+
+                products.forEach(product => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td class="p-3 text-sm">${product.id}</td>
+                        <td class="p-3 text-sm">${product.name}</td>
+                        <td class="p-3 text-sm">${product.description}</td>
+                        <td class="p-3 text-sm">${product.price}</td>
+                        <td class="p-3 text-sm">${product.quantity}</td>
+                        <td style="display: none">${product.vendorId}</td>
+                        <td class="p-3 flex gap-2 justify-center">
+                            <button class="text-indigo-100 hover:text-indigo-200" onclick="openEditProductModal(${product.id})">✏️</button>
+                            <button class="text-red-300 hover:text-red-400" onclick="deleteProduct(${product.id})">🗑️</button>
+                        </td>
+                    `;
+                    tbody.appendChild(row);
+                });
+            } catch (error) {
+                console.error('Error loading products:', error);
+                alert('Failed to load products.');
+            }
+        }
+
+        async function loadVendors() {
+            try {
+                const response = await fetch('http://localhost:3010/api/vendors');
+                const vendors = await response.json();
+
+                const vendorSelect = document.querySelector('#addProductForm select[name="vendorId"]');
+                vendorSelect.innerHTML = '<option value="" disabled selected>Select Vendor</option>';
+                vendors.forEach(vendor => {
+                    const option = document.createElement('option');
+                    option.value = vendor.id;
+                    option.textContent = vendor.name;
+                    vendorSelect.appendChild(option);
+                });
+            } catch (error) {
+                console.error('Error loading vendors:', error);
+                alert('Failed to load vendors.');
+            }
+        }
+
+        function openAddProductModal() {
+            loadVendors();
+            document.getElementById('addProductModal').style.display = 'flex';
+        }
+
+        function closeAddProductModal() {
+            document.getElementById('addProductModal').style.display = 'none';
+            document.getElementById('addProductForm').reset();
+        }
+
+        document.getElementById('addProductForm').addEventListener('submit', async function (e) {
+            e.preventDefault();
+            const form = e.target;
+
+            const newProduct = {
+                name: form.name.value,
+                description: form.description.value,
+                price: parseFloat(form.price.value),
+                quantity: parseInt(form.quantity.value),
+                vendorId: parseInt(form.vendorId.value)
+            };
+
+            try {
+                const response = await fetch('http://localhost:3010/api/items/batch', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify([newProduct]),
+                });
+
+                if (response.ok) {
+                    alert("Product added successfully!");
+                    closeAddProductModal();
+                    loadProducts();
+                } else {
+                    alert("Failed to add product.");
+                }
+            } catch (err) {
+                console.error("Error adding product:", err);
+                alert("Error occurred.");
+            }
+        });
+
+        async function openEditProductModal(id) {
+            try {
+                const response = await fetch(`http://localhost:3010/api/items/${id}`);
+                const product = await response.json();
+
+                const form = document.getElementById('editProductForm');
+                form.id.value = product.id;
+                form.name.value = product.name;
+                form.description.value = product.description;
+                form.price.value = product.price;
+                form.quantity.value = product.quantity;
+                form.vendorId.value = product.vendorId;
+
+                document.getElementById('editProductModal').style.display = 'flex';
+            } catch (error) {
+                console.error('Error fetching product:', error);
+                alert('Failed to fetch product data.');
+            }
+        }
+
+        function closeEditProductModal() {
+            document.getElementById('editProductModal').style.display = 'none';
+            document.getElementById('editProductForm').reset();
+        }
+
+        document.getElementById('editProductForm').addEventListener('submit', async function (e) {
+            e.preventDefault();
+            const form = e.target;
+
+            const updatedProduct = {
+                id: parseInt(form.id.value),
+                name: form.name.value,
+                description: form.description.value,
+                price: parseFloat(form.price.value),
+                quantity: parseInt(form.quantity.value),
+                vendorId: parseInt(form.vendorId.value)
+            };
+
+            try {
+                const response = await fetch(`http://localhost:3010/api/items/${updatedProduct.id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(updatedProduct)
+                });
+
+                if (response.ok) {
+                    alert("Product updated successfully!");
+                    closeEditProductModal();
+                    loadProducts();
+                } else {
+                    alert("Failed to update product.");
+                }
+            } catch (error) {
+                console.error("Error updating product:", error);
+                alert("Error occurred.");
+            }
+        });
+
+        async function deleteProduct(id) {
+            if (!id) {
+                alert('Product ID not specified.');
+                return;
+            }
+            if (confirm('Are you sure you want to delete this product?')) {
+                try {
+                    const response = await fetch(`http://localhost:3010/api/items/${id}`, {
+                        method: 'DELETE'
+                    });
+                    if (response.ok) {
+                        alert('Product deleted.');
+                        loadProducts();
+                    } else {
+                        alert('Failed to delete product.');
+                    }
+                } catch (error) {
+                    console.error('Error deleting product:', error);
+                    alert('Error occurred.');
+                }
+            }
+        }
+
+        function editProduct() {
+            alert("Please click the pencil icon in the table row to edit a product.");
+        }
+
+        function viewProducts() {
+            loadProducts();
+        }
+
+        window.onload = () => {
+            loadProducts();
+        };
+    </script>
+</body>
+
+</html>

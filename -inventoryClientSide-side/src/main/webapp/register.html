@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Register - Inventory System</title>
+  <script src="https://unpkg.com/@tailwindcss/browser@4"></script>
+</head>
+
+<body class="bg-gradient-to-br from-blue-200 to-purple-400 min-h-screen flex items-center justify-center relative pb-32">
+
+  <div class="w-full rounded-lg bg-slate-900 p-10 text-sm text-indigo-300 sm:w-96 max-w-96 mt-10">
+    <h1 class="mb-4 text-center text-3xl font-semibold text-white">Register</h1>
+    <p class="mb-6 text-center text-sm">Create your account below</p>
+
+    <form id="registerForm" novalidate>
+      <div class="mb-4">
+        <input type="text" id="name" placeholder="Full Name" class="w-full rounded-md px-4 py-3 bg-[#333A5c] text-white outline-none" />
+        <small class="text-red-400 hidden">Name must be at least 3 characters.</small>
+      </div>
+
+      <div class="mb-4">
+        <input type="text" id="username" name="username" onblur="checkUsernameAvailability()" placeholder="Username" class="w-full rounded-md px-4 py-3 bg-[#333A5c] text-white outline-none" />
+        <span id="username-status" class="text-xs"></span>
+      </div>
+
+      <div class="mb-4">
+        <input type="email" id="email" placeholder="Email Address" class="w-full rounded-md px-4 py-3 bg-[#333A5c] text-white outline-none" />
+        <small class="text-red-400 hidden">Please enter a valid email address.</small>
+      </div>
+
+      <div class="mb-4">
+        <input type="text" id="phoneNumber" placeholder="Phone Number" class="w-full rounded-md px-4 py-3 bg-[#333A5c] text-white outline-none" />
+        <small class="text-red-400 hidden">Phone must be 10-15 digits, no spaces or dashes.</small>
+      </div>
+
+      <div class="mb-4">
+        <input type="text" id="address" placeholder="Address" class="w-full rounded-md px-4 py-3 bg-[#333A5c] text-white outline-none" />
+        <small class="text-red-400 hidden">Address must be at least 5 characters.</small>
+      </div>
+
+      <div class="mb-4">
+        <input type="password" id="password" placeholder="Password" class="w-full rounded-md px-4 py-3 bg-[#333A5c] text-white outline-none" />
+        <small class="text-red-400 hidden">Password must be at least 6 characters.</small>
+      </div>
+
+      <button type="submit" class="w-full rounded-full bg-gradient-to-r from-indigo-400 to-indigo-900 py-3 font-medium tracking-wide text-white">Register</button>
+      <p id="successMsg" class="text-center text-sm mt-4"></p>
+    </form>
+
+    <p class="mt-6 text-center text-sm text-slate-400">Already have an account?
+      <a href="index.html" class="hover:underline text-blue-400">Login</a>
+    </p>
+
+    <!-- Modal -->
+    <div id="successModal" class="fixed inset-0 bg-black bg-opacity-60 hidden items-center justify-center z-50">
+      <div class="bg-white text-center p-6 rounded-xl max-w-sm w-full">
+        <h3 class="text-xl font-semibold text-gray-800">Registration Successful!</h3>
+        <p class="text-sm mt-2 text-gray-600">Your Customer ID is:</p>
+        <h2 id="customerIdDisplay" class="text-2xl mt-1 font-bold text-green-600"></h2>
+        <button onclick="closeModal()" class="mt-4 bg-indigo-500 text-white px-4 py-2 rounded-lg">OK</button>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    const form = document.getElementById("registerForm");
+    const successMsg = document.getElementById("successMsg");
+
+    const validators = {
+      name: {
+        test: (val) => val.length >= 3,
+        message: "Name must be at least 3 characters."
+      },
+      email: {
+        test: (val) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val),
+        message: "Please enter a valid email address."
+      },
+      phoneNumber: {
+        test: (val) => /^[0-9]{10,15}$/.test(val.replace(/\D/g, '')),
+        message: "Phone must be 10-15 digits, no spaces or dashes."
+      },
+      address: {
+        test: (val) => val.length >= 5,
+        message: "Address must be at least 5 characters."
+      },
+      password: {
+        test: (val) => val.length >= 6,
+        message: "Password must be at least 6 characters."
+      }
+    };
+
+    function validateField(id) {
+      const input = document.getElementById(id);
+      const small = input.nextElementSibling;
+      const isValid = validators[id].test(input.value.trim());
+
+      if (!isValid) {
+        input.classList.add("border-red-500");
+        if (small) {
+          small.style.display = "block";
+        }
+      } else {
+        input.classList.remove("border-red-500");
+        if (small) {
+          small.style.display = "none";
+        }
+      }
+
+      return isValid;
+    }
+
+    ["name", "email", "phoneNumber", "address", "password"].forEach(id => {
+      document.getElementById(id).addEventListener("input", () => validateField(id));
+    });
+
+    form.addEventListener("submit", function (e) {
+      e.preventDefault();
+
+      let allValid = true;
+      for (let field in validators) {
+        if (!validateField(field)) {
+          allValid = false;
+        }
+      }
+
+      if (!allValid) {
+        successMsg.textContent = "";
+        return;
+      }
+
+      const userData = {
+        username: document.getElementById("username").value.trim(),
+        name: document.getElementById("name").value.trim(),
+        email: document.getElementById("email").value.trim(),
+        phoneNumber: document.getElementById("phoneNumber").value.trim(),
+        address: document.getElementById("address").value.trim(),
+        password: document.getElementById("password").value.trim()
+      };
+
+      fetch("http://localhost:3010/api/customers/register", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(userData)
+      })
+        .then((response) => {
+          if (!response.ok) {
+            return response.text().then(msg => { throw new Error(msg); });
+          }
+          return response.json();
+        })
+        .then((data) => {
+          const customerId = data.id;
+          document.getElementById("customerIdDisplay").textContent = customerId;
+          document.getElementById("successModal").style.display = "flex";
+        })
+        .catch((error) => {
+          successMsg.style.color = "red";
+          successMsg.textContent = error.message || "Registration failed.";
+        });
+    });
+
+    function closeModal() {
+      document.getElementById("successModal").style.display = "none";
+      window.location.href = "index.html";
+    }
+
+    function checkUsernameAvailability() {
+      const username = document.getElementById('username').value;
+      fetch(`/api/customers/check-username?username=${encodeURIComponent(username)}`)
+        .then(response => response.json())
+        .then(data => {
+          const statusSpan = document.getElementById('username-status');
+          if (data.exists) {
+            statusSpan.textContent = "Username is already taken.";
+            statusSpan.style.color = "red";
+          } else {
+            statusSpan.textContent = "Username is available.";
+            statusSpan.style.color = "green";
+          }
+        })
+        .catch(error => {
+          console.error('Error checking username availability:', error);
+        });
+    }
+  </script>
+</body>
+
+</html>

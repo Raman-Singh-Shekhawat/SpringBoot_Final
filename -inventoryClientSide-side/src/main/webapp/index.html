@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Inventory Login</title>
+  <script src="https://unpkg.com/@tailwindcss/browser@4"></script>
+  <style>
+    /* Fade-in animation for pop-up */
+    @keyframes fadeInScale {
+      from { opacity: 0; transform: scale(0.9); }
+      to { opacity: 1; transform: scale(1); }
+    }
+    .popup-container {
+      animation: fadeInScale 0.3s ease-out forwards;
+    }
+  </style>
+</head>
+<body class="flex min-h-screen items-center justify-center bg-gradient-to-br from-blue-200 to-purple-400 relative pb-32">
+
+  <div class="w-full rounded-lg bg-slate-900 p-10 text-sm text-indigo-300 sm:w-96 max-w-96 mt-18 shadow-lg">
+    <h1 class="mb-4 text-center text-3xl font-semibold text-white">Login to Inventory System</h1>
+    <form id="loginForm">
+      <div class="mb-5 flex gap-3 rounded-full bg-[#333A5c] px-6 py-3">
+        <input type="text" id="username" placeholder="Username" required class="w-full bg-transparent border-none outline-none text-white placeholder-indigo-400"/>
+      </div>
+      <div class="mb-5 flex gap-3 rounded-full bg-[#333A5c] px-6 py-3">
+        <input type="password" id="password" placeholder="Password" required class="w-full bg-transparent border-none outline-none text-white placeholder-indigo-400"/>
+      </div>
+      <button type="submit" class="w-full rounded-full bg-gradient-to-r from-indigo-400 to-indigo-900 py-3 font-medium tracking-wide text-white cursor-pointer">Login</button>
+      <p id="errorMsg" class="text-center text-red-400 text-sm mt-4"></p>
+    </form>
+
+    <p class="mt-4 mb-7 text-center text-sm text-slate-400">Don't have an account? 
+      <button onclick="window.location.href='register.html'" class="text-blue-400 hover:underline font-medium">Register</button>
+    </p>
+  </div>
+
+  <!-- Pop-up for login success -->
+  <div id="successPopup" class="fixed inset-0 flex items-center justify-center bg-black/50 hidden">
+    <div class="popup-container w-full max-w-sm rounded-lg bg-slate-900 p-6 text-indigo-300 shadow-lg">
+      <h2 class="text-center text-xl font-semibold text-white mb-4">Login Successful!</h2>
+      <p id="popupMessage" class="text-center text-sm mb-6"></p>
+      <button id="closePopup" class="w-full rounded-full bg-gradient-to-r from-indigo-400 to-indigo-900 py-2 font-medium tracking-wide text-white hover:opacity-90">Continue</button>
+    </div>
+  </div>
+
+  <script>
+    document.getElementById("loginForm").addEventListener("submit", function (e) {
+      e.preventDefault();
+
+      const username = document.getElementById("username").value.trim();
+      const password = document.getElementById("password").value.trim();
+      console.log(username);
+      console.log(password);
+
+      function showPopup(message, redirectUrl) {
+        const popup = document.getElementById("successPopup");
+        const popupMessage = document.getElementById("popupMessage");
+        const closeButton = document.getElementById("closePopup");
+
+        popupMessage.textContent = message;
+        popup.classList.remove("hidden");
+
+        closeButton.onclick = () => {
+          popup.classList.add("hidden");
+          window.location.href = redirectUrl;
+        };
+      }
+
+      if (username === "Admin" && password === "admin123") {
+        localStorage.setItem("isAdmin", "true");
+        showPopup("Admin login successful!", "admin-dashboard.html");
+        return;
+      }
+
+      fetch("http://localhost:3010/api/customers/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ username, password })
+      })
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error("Invalid credentials");
+        }
+        return response.json();
+      })
+      .then((data) => {
+        localStorage.setItem("customerId", data.id);
+        showPopup("Login successful!", "home.html");
+      })
+      .catch((error) => {
+        document.getElementById("errorMsg").textContent = error.message;
+      });
+    });
+  </script>
+
+</body>
+</html>

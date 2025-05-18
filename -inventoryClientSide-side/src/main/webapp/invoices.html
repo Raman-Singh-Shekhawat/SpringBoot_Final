@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Invoices</title>
+  <script src="https://unpkg.com/@tailwindcss/browser@4"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+
+<body class="min-h-screen bg-gradient-to-br from-blue-200 to-purple-400 text-white font-sans">
+  <!-- Navigation Bar -->
+  <nav class="bg-slate-900 flex items-center justify-between px-8 py-4 shadow-lg">
+    <div class="text-2xl font-semibold text-white">Admin Panel</div>
+    <div class="flex items-center gap-4">
+      <a href="make-purchase.html"
+        class="rounded-full bg-white text-indigo-700 px-4 py-2 flex items-center gap-2 cursor-pointer hover:bg-indigo-100 no-underline">
+        <i data-lucide="shopping-bag"></i>
+        <span class="font-medium">Make Purchase</span>
+      </a>
+      <a href="invoices.html"
+        class="rounded-full bg-white text-indigo-700 px-4 py-2 flex items-center gap-2 cursor-pointer hover:bg-indigo-100 no-underline">
+        <i data-lucide="file-text"></i>
+        <span class="font-medium">Invoices</span>
+      </a>
+      <a href="admin-products.html"
+        class="rounded-full bg-white text-indigo-700 px-4 py-2 flex items-center gap-2 cursor-pointer hover:bg-indigo-100 no-underline">
+        <i data-lucide="package"></i>
+        <span class="font-medium">Product</span>
+      </a>
+      <a href="vendors.html"
+        class="rounded-full bg-white text-indigo-700 px-4 py-2 flex items-center gap-2 cursor-pointer hover:bg-indigo-100 no-underline">
+        <i data-lucide="store"></i>
+        <span class="font-medium">Vendor</span>
+      </a>
+      <a href="#" onclick="logout()"
+        class="rounded-full bg-white text-indigo-700 px-4 py-2 flex items-center gap-2 cursor-pointer hover:bg-indigo-100 no-underline">
+        <i data-lucide="log-out"></i>
+        <span class="font-medium">Logout</span>
+      </a>
+    </div>
+  </nav>
+
+  <!-- Main Layout -->
+  <div class="flex min-h-[calc(100vh-80px)]">
+    <!-- Sidebar -->
+    <div class="w-56 bg-slate-900 text-indigo-300 p-6 shadow-lg">
+      <button id="ordersBtn"
+        class="w-full rounded-full bg-indigo-100 text-indigo-700 py-2 mb-4 font-medium hover:bg-indigo-200 transition duration-200 active:bg-indigo-400 active:text-white">Vendor
+        Orders</button>
+      <button id="updateBtn"
+        class="w-full rounded-full bg-indigo-100 text-indigo-700 py-2 font-medium hover:bg-indigo-200 transition duration-200 active:bg-indigo-400 active:text-white">Customer
+        Orders</button>
+    </div>
+
+    <!-- Main Content -->
+    <div class="flex-1 p-10 flex flex-col items-center gap-8">
+      <div id="invoiceContainer" class="w-full max-w-4xl"></div>
+      <div id="customerContainer" class="w-full max-w-4xl" style="display: none;"></div>
+    </div>
+  </div>
+
+  <!-- Script -->
+  <script>
+    if (localStorage.getItem("isAdmin") !== "true") {
+      window.location.href = "index.html";
+    }
+
+    function logout() {
+      localStorage.removeItem("isAdmin");
+      alert("Logged out successfully.");
+      window.location.href = "index.html";
+    }
+
+    lucide.createIcons();
+
+    const invoiceContainer = document.getElementById("invoiceContainer");
+    const customerContainer = document.getElementById("customerContainer");
+    const ordersBtn = document.getElementById("ordersBtn");
+    const updateBtn = document.getElementById("updateBtn");
+
+    document.addEventListener("DOMContentLoaded", () => {
+      fetchInvoices();
+    });
+
+    ordersBtn.addEventListener("click", () => {
+      ordersBtn.classList.add("active:bg-indigo-400", "active:text-white");
+      updateBtn.classList.remove("active:bg-indigo-400", "active:text-white");
+      invoiceContainer.style.display = "block";
+      customerContainer.style.display = "none";
+    });
+
+    updateBtn.addEventListener("click", () => {
+      updateBtn.classList.add("active:bg-indigo-400", "active:text-white");
+      ordersBtn.classList.remove("active:bg-indigo-400", "active:text-white");
+      invoiceContainer.style.display = "none";
+      customerContainer.style.display = "block";
+      fetchCustomerOrders();
+    });
+
+    async function fetchInvoices() {
+      try {
+        const res = await fetch("http://localhost:3010/api/invoices");
+        const invoices = await res.json();
+
+        invoiceContainer.innerHTML = '';
+        invoices.forEach(invoice => {
+          const statusClass = {
+            pending: "bg-yellow-100 text-yellow-800",
+            paid: "bg-green-100 text-green-800",
+            cancelled: "bg-red-100 text-red-800"
+          }[invoice.status.toLowerCase()] || "bg-yellow-100 text-yellow-800";
+
+          const orderDate = invoice.createdDate ? `<div class="text-indigo-300 text-xs mb-2">Order Date: ${new Date(invoice.createdDate).toLocaleDateString()}</div>` : '';
+          const paymentDate = invoice.paymentDate ? `<div class="text-indigo-300 text-xs mb-2">Payment Date: ${new Date(invoice.paymentDate).toLocaleDateString()}</div>` : '';
+
+          const card = document.createElement("div");
+          card.className = "bg-slate-900 text-indigo-300 w-full p-6 rounded-2xl shadow-lg hover:shadow-xl transition duration-200";
+          card.innerHTML = `
+            <div class="flex justify-between items-center mb-4">
+              <div>
+                <span class="text-white text-base font-semibold">Invoice #${invoice.invoiceNumber || invoice.id}</span><br />
+                <small class="text-indigo-300 text-xs">Vendor: ${invoice.vendorId}</small>
+              </div>
+              <span class="${statusClass} text-xs font-bold px-3 py-1 rounded-full uppercase">${invoice.status}</span>
+            </div>
+            ${orderDate}
+            ${paymentDate}
+            <table class="w-full border-collapse">
+              <thead>
+                <tr class="bg-[#333A5c]">
+                  <th class="p-3 text-left text-white text-sm font-semibold">Item</th>
+                  <th class="p-3 text-left text-white text-sm font-semibold">Qty</th>
+                  <th class="p-3 text-left text-white text-sm font-semibold">Rate</th>
+                  <th class="p-3 text-left text-white text-sm font-semibold">Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${invoice.items.map(item => `
+                  <tr class="border-b border-indigo-800">
+                    <td class="p-3 text-sm">${item.itemName}</td>
+                    <td class="p-3 text-sm">${item.quantity}</td>
+                    <td class="p-3 text-sm">₹${item.unitPrice}</td>
+                    <td class="p-3 text-sm">₹${item.unitPrice * item.quantity}</td>
+                  </tr>
+                `).join("")}
+              </tbody>
+            </table>
+            <div class="text-white font-semibold text-base mt-4">Total Amount: ₹${invoice.totalAmount}</div>
+            <div class="flex gap-3 mt-4">
+              ${invoice.status.toLowerCase() !== 'paid' ? `<button class="rounded-full bg-gradient-to-r from-indigo-400 to-indigo-900 py-2 px-4 font-medium tracking-wide text-white hover:opacity-90" onclick="purchaseInvoice('${invoice.invoiceNumber || invoice.id}')">Purchase</button>` : ''}
+              ${invoice.status.toLowerCase() !== 'paid' && invoice.status.toLowerCase() !== 'cancelled' ? `<button class="rounded-full bg-red-100 text-red-700 py-2 px-4 font-medium hover:bg-red-200" onclick="cancelInvoice('${invoice.id}')">Cancel</button>` : ''}
+            </div>
+          `;
+          invoiceContainer.appendChild(card);
+        });
+      } catch (err) {
+        console.error("Failed to fetch invoices:", err);
+      }
+    }
+
+    async function fetchCustomerOrders() {
+      try {
+        const res = await fetch("http://localhost:3010/api/orders");
+        const orders = await res.json();
+
+        customerContainer.innerHTML = '';
+        orders.forEach(order => {
+          const statusClass = {
+            pending: "bg-yellow-100 text-yellow-800",
+            order_confirmed: "bg-yellow-100 text-yellow-800",
+            out_for_delivery: "bg-yellow-100 text-yellow-800",
+            dispatched: "bg-red-100 text-red-800",
+            delivered: "bg-green-100 text-green-800"
+          }[order.orderStatus.toLowerCase()] || "bg-yellow-100 text-yellow-800";
+
+          const card = document.createElement("div");
+          card.className = "bg-slate-900 text-indigo-300 w-full p-6 rounded-2xl shadow-lg hover:shadow-xl transition duration-200";
+          card.innerHTML = `
+            <div class="flex justify-between items-center mb-4">
+              <div>
+                <span class="text-white text-base font-semibold">Order #${order.orderNumber || order.id}</span><br />
+                <small class="text-indigo-300 text-xs">Customer: ${order.customer.name}</small>
+              </div>
+              <span class="${statusClass} text-xs font-bold px-3 py-1 rounded-full uppercase">${order.orderStatus}</span>
+            </div>
+            <div class="text-indigo-300 text-xs mb-2">Order Date: ${new Date(order.orderDate).toLocaleDateString()}</div>
+            <table class="w-full border-collapse">
+              <thead>
+                <tr class="bg-[#333A5c]">
+                  <th class="p-3 text-left text-white text-sm font-semibold">Item</th>
+                  <th class="p-3 text-left text-white text-sm font-semibold">Qty</th>
+                  <th class="p-3 text-left text-white text-sm font-semibold">Price</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${order.orderItems.map(item => `
+                  <tr class="border-b border-indigo-800">
+                    <td class="p-3 text-sm">${item.item.name}</td>
+                    <td class="p-3 text-sm">${item.quantity}</td>
+                    <td class="p-3 text-sm">₹${item.item.price}</td>
+                  </tr>
+                `).join("")}
+              </tbody>
+            </table>
+            <div class="text-white font-semibold text-base mt-4">Total: ₹${order.totalAmount}</div>
+            <select class="w-full rounded-full px-4 py-2 text-sm text-white bg-[#333A5c] border-none outline-none mt-4" onchange="updateOrderStatus('${order.id}', this.value)">
+              <option disabled selected>Change Status</option>
+              <option value="OUT_FOR_DELIVERY">OUT_FOR_DELIVERY</option>
+              <option value="DISPATCHED">DISPATCHED</option>
+              <option value="DELIVERED">DELIVERED</option>
+            </select>
+          `;
+          customerContainer.appendChild(card);
+        });
+      } catch (err) {
+        console.error("Failed to fetch customer orders:", err);
+      }
+    }
+
+    async function purchaseInvoice(invoiceNumber) {
+      try {
+        await fetch(`http://localhost:3010/api/invoices/${invoiceNumber}/confirm-payment`, { method: "PUT" });
+        alert("Invoice purchased.");
+        location.reload();
+      } catch (err) {
+        console.error("Purchase error:", err);
+      }
+    }
+
+    async function cancelInvoice(id) {
+      try {
+        await fetch(`http://localhost:3010/api/invoices/${id}/cancel`, { method: "POST" });
+        alert("Invoice cancelled.");
+        location.reload();
+      } catch (err) {
+        console.error("Cancel error:", err);
+      }
+    }
+
+    async function updateOrderStatus(orderId, newStatus) {
+      try {
+        const res = await fetch(`http://localhost:3010/api/orders/${orderId}/status`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: `"${newStatus.toString()}"`
+        });
+
+        if (res.ok) {
+          alert("Order status updated to " + newStatus);
+          fetchCustomerOrders();
+        } else {
+          alert("Failed to update status");
+        }
+      } catch (error) {
+        console.error("Error updating status:", error);
+      }
+    }
+  </script>
+</body>
+
+</html>

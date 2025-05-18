@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Inventory Dashboard</title>
+  <script src="https://unpkg.com/@tailwindcss/browser@4"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    /* Fade-in animation for pop-up */
+    @keyframes fadeInScale {
+      from { opacity: 0; transform: scale(0.9); }
+      to { opacity: 1; transform: scale(1); }
+    }
+    .popup-container {
+      animation: fadeInScale 0.3s ease-out forwards;
+    }
+
+    /* Search bar custom styles */
+    .search-form {
+      position: relative;
+      display: flex;
+      align-items: center;
+      width: 14rem; /* w-56 */
+    }
+    .search-icon {
+      position: absolute;
+      left: 0.75rem;
+      top: 50%;
+      transform: translateY(-50%);
+    }
+    .search-input {
+      padding-left: 2.5rem; /* Space for icon */
+    }
+    .search-submit {
+      display: none; /* Hidden, as original has no submit button */
+    }
+
+    /* Product card hover styles */
+    .product-card {
+      isolation: isolate; /* Prevent flexbox hover propagation */
+    }
+    .product-details {
+      opacity: 0;
+      max-height: 0;
+      overflow: hidden;
+      transition: opacity 0.3s ease-in-out, max-height 0.3s ease-in-out;
+    }
+    .product-card:hover > .product-details {
+      opacity: 1;
+      max-height: 10rem; /* Adjust to fit content */
+    }
+  </style>
+</head>
+
+<body class="min-h-screen bg-gradient-to-br from-blue-200 to-purple-400 text-white font-sans">
+
+  <!-- Navigation Bar -->
+  <nav class="bg-slate-900 flex items-center justify-between px-8 py-4 shadow-lg">
+    <div class="text-2xl font-semibold text-white">Shopify</div>
+    <div class="flex items-center gap-4">
+      <form action="" class="search-form">
+        <i data-lucide="search" class="search-icon text-indigo-300 h-5 w-5"></i>
+        <input
+          type="search"
+          placeholder="Search products..."
+          class="search-input rounded-full px-4 py-2 text-sm text-white placeholder-indigo-300 bg-[#333A5c] border-none outline-none w-56"
+          id="searchInput"
+        />
+        <button
+          type="submit"
+          class="search-submit rounded-full bg-gradient-to-r from-indigo-400 to-indigo-900 text-white px-4 py-2 hover:opacity-90"
+          aria-label="Search"
+        >
+          Search
+        </button>
+      </form>
+      <div
+        class="rounded-full bg-gradient-to-r from-indigo-400 to-indigo-900 text-white px-4 py-2 flex items-center gap-2 cursor-pointer hover:opacity-90">
+        <a href="cart.html" class="flex items-center gap-2 text-white no-underline">
+          <i data-lucide="shopping-cart"></i>
+        </a>
+      </div>
+      <div
+        class="rounded-full bg-gradient-to-r from-indigo-400 to-indigo-900 text-white px-4 py-2 flex items-center gap-2 cursor-pointer hover:opacity-90">
+        <a href="profile.html" class="flex items-center gap-2 text-white no-underline">
+          <i data-lucide="user"></i>
+        </a>
+      </div>
+      <div
+        class="rounded-full bg-gradient-to-r from-indigo-400 to-indigo-900 text-white px-4 py-2 flex items-center gap-2 cursor-pointer hover:opacity-90">
+        <a href="#" onclick="logout()" class="flex items-center gap-2 text-white no-underline">
+          <i data-lucide="log-out"></i>
+          <span class="font-medium">Logout</span>
+        </a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Main Content -->
+  <div id="productList" class="p-10 flex flex-wrap justify-center gap-8">
+    <!-- Products will be inserted here dynamically -->
+  </div>
+
+  <!-- Pop-up for logout success -->
+  <div id="successPopup" class="fixed inset-0 flex items-center justify-center bg-black/50 hidden">
+    <div class="popup-container w-full max-w-sm rounded-2xl bg-slate-900 p-6 text-indigo-300 shadow-lg">
+      <h2 class="text-center text-xl font-semibold text-white mb-4">Logout Successful!</h2>
+      <p id="popupMessage" class="text-center text-sm mb-6"></p>
+      <button id="closePopup" class="w-full rounded-full bg-gradient-to-r from-indigo-400 to-indigo-900 py-2 font-medium tracking-wide text-white hover:opacity-90">Continue</button>
+    </div>
+  </div>
+
+  <script>
+    lucide.createIcons();
+
+    async function loadProducts(searchQuery = '') {
+      try {
+        const url = searchQuery ? `http://localhost:3010/api/items?search=${encodeURIComponent(searchQuery)}` : 'http://localhost:3010/api/items';
+        const response = await fetch(url);
+        if (!response.ok) throw new Error("Network response was not ok");
+
+        const products = await response.json();
+        const container = document.getElementById("productList");
+        container.innerHTML = "";
+
+        if (products.length === 0) {
+          container.innerHTML = `<p class="text-indigo-300 font-medium">No products found.</p>`;
+          return;
+        }
+
+        products.forEach(p => {
+          if (p.quantity > 0) {
+            const div = document.createElement("div");
+            div.className = "product-card bg-slate-900 text-indigo-300 w-72 p-6 rounded-2xl shadow-lg hover:shadow-xl transition duration-200 flex flex-col";
+
+            const title = document.createElement("h3");
+            title.className = "text-white text-xl font-semibold mb-2";
+            title.textContent = p.name;
+
+            const details = document.createElement("div");
+            details.className = "product-details";
+
+            const vendorTag = document.createElement("div");
+            vendorTag.className = "inline-block bg-indigo-100 text-indigo-700 text-xs font-medium px-3 py-1 rounded-full mb-3";
+            vendorTag.textContent = p.vendorName;
+
+            const desc = document.createElement("p");
+            desc.className = "text-sm mb-3";
+            desc.textContent = p.description;
+
+            const price = document.createElement("p");
+            price.className = "text-white font-semibold text-base mb-4";
+            price.textContent = "₹" + p.price;
+
+            const button = document.createElement("button");
+            button.className = "w-full rounded-full bg-gradient-to-r from-indigo-400 to-indigo-900 py-2 font-medium tracking-wide text-white hover:opacity-90";
+            button.textContent = "Add to Cart";
+            button.onclick = () => addToCart(p.id);
+
+            details.append(vendorTag, desc, price);
+            div.append(title, details, button);
+            container.appendChild(div);
+          }
+        });
+
+      } catch (error) {
+        console.error("Failed to fetch products:", error);
+        document.getElementById("productList").innerHTML =
+          `<p class="text-red-300 font-medium">Unable to load products. Please try again later.</p>`;
+      }
+    }
+
+    async function addToCart(itemId) {
+      console.log(itemId);
+      const customerId = localStorage.getItem("customerId");
+      console.log("customer id" + " " + customerId);
+      if (!customerId) {
+        alert("Please log in to add items to the cart.");
+        return;
+      }
+
+      try {
+        const response = await fetch("http://localhost:3010/api/cart/add", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            customerId: parseInt(customerId),
+            items: [{ itemId: itemId, quantity: 1 }]
+          })
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.message || "Failed to add item to cart");
+        }
+
+        alert("Item added to cart!");
+      } catch (error) {
+        console.error("Error during add to cart:", error);
+        alert("Failed to add item to cart. Please try again later.");
+      }
+    }
+
+    function logout() {
+      function showPopup(message, redirectUrl) {
+        const popup = document.getElementById("successPopup");
+        const popupMessage = document.getElementById("popupMessage");
+        const closeButton = document.getElementById("closePopup");
+
+        popupMessage.textContent = message;
+        popup.classList.remove("hidden");
+
+        closeButton.onclick = () => {
+          popup.classList.add("hidden");
+          window.location.href = redirectUrl;
+        };
+      }
+
+      showPopup("Logged out successfully!", "index.html");
+    }
+
+    // Search functionality
+    document.querySelector('.search-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const query = document.getElementById('searchInput').value.trim();
+      loadProducts(query);
+    });
+
+    loadProducts();
+  </script>
+</body>
+
+</html>

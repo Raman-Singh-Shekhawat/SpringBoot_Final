@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<meta charset="UTF-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+	<title>Shopping Cart</title>
+	<script src="https://unpkg.com/@tailwindcss/browser@4"></script>
+	<script src="https://unpkg.com/lucide@latest"></script>
+</head>
+
+<body class="min-h-screen bg-gradient-to-br from-blue-200 to-purple-400 text-white font-sans">
+	<!-- Navigation Bar -->
+	<nav class="bg-slate-900 flex items-center justify-between px-8 py-4 shadow-lg">
+		<div class="text-2xl font-semibold text-white">Inventory</div>
+		<div class="flex items-center gap-4">
+			<div
+				class="rounded-full bg-white text-indigo-700 px-4 py-2 flex items-center gap-2 cursor-pointer hover:bg-indigo-100">
+				<a href="profile.html" class="flex items-center gap-2 text-indigo-700 no-underline">
+					<i data-lucide="user"></i>
+					<span class="font-medium">Profile</span>
+				</a>
+			</div>
+			<div
+				class="rounded-full bg-white text-indigo-700 px-4 py-2 flex items-center gap-2 cursor-pointer hover:bg-indigo-100">
+				<a href="cart.html" class="flex items-center gap-2 text-indigo-700 no-underline">
+					<i data-lucide="shopping-cart"></i>
+					<span class="font-medium">Cart</span>
+				</a>
+			</div>
+			<div
+			  class="rounded-full bg-white text-indigo-700 px-4 py-2 flex items-center gap-2 cursor-pointer hover:bg-indigo-100">
+			  <a href="#" onclick="logout()" class="flex items-center gap-2 text-indigo-700 no-underline">
+			    <i data-lucide="log-out"></i>
+			    <span class="font-medium">Logout</span>
+			  </a>
+			</div>
+		</div>
+	</nav>
+
+	<!-- Cart Page -->
+	<div class="max-w-4xl mx-auto p-10">
+		<h2 class="text-white text-xl font-semibold mb-6">Your Cart</h2>
+		<div class="bg-slate-900 text-indigo-300 p-6 rounded-2xl shadow-lg mb-6" id="cartItems"></div>
+		<div class="text-white font-semibold text-base text-right mb-8" id="totalPrice">Total: ₹0</div>
+		<button class="w-full rounded-full bg-gradient-to-r from-indigo-400 to-indigo-900 py-2 font-medium tracking-wide text-white hover:opacity-90"
+			onclick="proceedToCheckout()">Proceed to Checkout</button>
+	</div>
+
+	<!-- Modal -->
+	<div id="checkoutModal"
+		class="fixed inset-0 bg-black bg-opacity-50 hidden justify-center items-center z-50">
+		<div class="bg-slate-900 text-indigo-300 p-8 rounded-2xl shadow-lg text-center">
+			<h2 class="text-white text-xl font-semibold mb-6">Order placed successfully!</h2>
+			<button onclick="closeModal()"
+				class="rounded-full bg-gradient-to-r from-indigo-400 to-indigo-900 py-2 px-6 font-medium tracking-wide text-white hover:opacity-90">OK</button>
+		</div>
+	</div>
+
+	<!-- Script -->
+	<script>
+		lucide.createIcons();
+
+		const customerId = localStorage.getItem("customerId");
+		let cart = [];
+
+		async function fetchCartItems() {
+			try {
+				const response = await fetch(`http://localhost:3010/api/cart/${customerId}/items`);
+				if (!response.ok) throw new Error("Failed to load cart items");
+
+				cart = await response.json();
+				renderCartItems();
+			} catch (err) {
+				console.error("Error:", err);
+				document.getElementById("cartItems").innerHTML = "<p class='text-red-300 font-medium'>Error loading cart items.</p>";
+			}
+		}
+
+		function renderCartItems() {
+			const cartItemsContainer = document.getElementById("cartItems");
+			cartItemsContainer.innerHTML = "";
+
+			let total = 0;
+
+			if (cart.length === 0) {
+				cartItemsContainer.innerHTML = "<p class='text-indigo-300 text-sm'>Your cart is empty.</p>";
+				document.getElementById("totalPrice").innerText = "Total: ₹0";
+				return;
+			}
+
+			cart.forEach(ci => {
+				const item = ci.item;
+				const price = item.price * ci.quantity;
+				total += price;
+
+				const cartItemDiv = document.createElement("div");
+				cartItemDiv.classList.add("flex", "justify-between", "py-4", "border-b", "border-indigo-800", "last:border-b-0");
+
+				cartItemDiv.innerHTML = `
+					<h4 class="text-white text-sm font-semibold">${item.name} - ₹${item.price}</h4>
+					<div class="flex items-center gap-3">
+						<button onclick="updateQuantity(${ci.id}, ${ci.quantity - 1})"
+							class="rounded-full bg-indigo-100 text-indigo-700 px-3 py-1 text-sm hover:bg-indigo-200">−</button>
+						<span class="text-indigo-300 text-sm">${ci.quantity}</span>
+						<button onclick="updateQuantity(${ci.id}, ${ci.quantity + 1})"
+							class="rounded-full bg-gradient-to-r from-indigo-400 to-indigo-900 px-3 py-1 text-sm text-white hover:opacity-90">+</button>
+					</div>
+				`;
+
+				cartItemsContainer.appendChild(cartItemDiv);
+			});
+
+			document.getElementById("totalPrice").innerText = `Total: ₹${total}`;
+		}
+
+		async function removeItemFromCart(cartItemId) {
+			try {
+				const res = await fetch(`http://localhost:3010/api/cart/item/${cartItemId}`, {
+					method: "DELETE"
+				});
+				if (!res.ok) throw new Error("Failed to remove item");
+				cart = cart.filter(item => item.id !== cartItemId);
+				renderCartItems();
+			} catch (err) {
+				console.error("Error removing item:", err);
+			}
+		}
+
+		async function proceedToCheckout() {
+			if (cart.length === 0) {
+				alert("Your cart is empty. Add items before checkout.");
+				return;
+			}
+
+			try {
+				const response = await fetch(`http://localhost:3010/api/orders/checkout/${customerId}`, {
+					method: "POST"
+				});
+
+				const data = await response.json();
+
+				if (response.ok) {
+					document.getElementById("checkoutModal").style.display = "flex";
+				} else {
+					alert(data.error || "Checkout failed.");
+				}
+			} catch (err) {
+				console.error("Checkout error:", err);
+				alert("An error occurred during checkout.");
+			}
+		}
+
+		function closeModal() {
+			document.getElementById("checkoutModal").style.display = "none";
+			cart = [];
+			renderCartItems();
+		}
+
+		async function updateQuantity(cartItemId, newQty) {
+			const cartItem = cart.find(item => item.id === cartItemId);
+			if (!cartItem) return alert("Item not found.");
+
+			const availableStock = cartItem.item.quantity; // total stock
+			const customerId = localStorage.getItem("customerId");
+
+			if (newQty > availableStock) {
+				alert(`Only ${availableStock} units available in stock.`);
+				return;
+			}
+
+			if (newQty < 1) {
+				const confirmed = confirm("Quantity is zero. Remove item from cart?");
+				if (!confirmed) return;
+				return removeItemFromCart(cartItemId);
+			}
+
+			const deltaQty = newQty - cartItem.quantity;
+			if (deltaQty === 0) return;
+
+			try {
+				const res = await fetch("http://localhost:3010/api/cart/add", {
+					method: "POST",
+					headers: {
+						"Content-Type": "application/json"
+					},
+					body: JSON.stringify({
+						customerId: parseInt(customerId),
+						items: [{ itemId: cartItem.item.id, quantity: deltaQty }]
+					})
+				});
+
+				if (!res.ok) throw new Error("Failed to update quantity");
+
+				cartItem.quantity = newQty;
+				renderCartItems();
+			} catch (err) {
+				console.error("Quantity update error:", err);
+				alert("Could not update quantity.");
+			}
+		}
+		
+		function logout() {
+		  alert("Logged out successfully.");
+		  window.location.href = "index.html";
+		}
+
+
+		fetchCartItems();
+	</script>
+</body>
+
+</html>

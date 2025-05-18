@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Vendors - Admin Dashboard</title>
+    <script src="https://unpkg.com/@tailwindcss/browser@4"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+
+<body class="min-h-screen bg-gradient-to-br from-blue-200 to-purple-400 text-white font-sans">
+    <!-- Navbar -->
+    <nav class="bg-slate-900 flex items-center justify-between px-8 py-4 shadow-lg">
+        <div class="text-2xl font-semibold text-white">Admin Panel</div>
+        <div class="flex items-center gap-4">
+            <a href="make-purchase.html"
+                class="rounded-full bg-white text-indigo-700 px-4 py-2 flex items-center gap-2 cursor-pointer hover:bg-indigo-100 no-underline">
+                <i data-lucide="shopping-bag"></i>
+                <span class="font-medium">Make Purchase</span>
+            </a>
+            <a href="invoices.html"
+                class="rounded-full bg-white text-indigo-700 px-4 py-2 flex items-center gap-2 cursor-pointer hover:bg-indigo-100 no-underline">
+                <i data-lucide="file-text"></i>
+                <span class="font-medium">Invoices</span>
+            </a>
+            <a href="admin-products.html"
+                class="rounded-full bg-white text-indigo-700 px-4 py-2 flex items-center gap-2 cursor-pointer hover:bg-indigo-100 no-underline">
+                <i data-lucide="package"></i>
+                <span class="font-medium">Product</span>
+            </a>
+            <a href="vendors.html"
+                class="rounded-full bg-white text-indigo-700 px-4 py-2 flex items-center gap-2 cursor-pointer hover:bg-indigo-100 no-underline">
+                <i data-lucide="store"></i>
+                <span class="font-medium">Vendor</span>
+            </a>
+            <a href="#" onclick="logout()"
+                class="rounded-full bg-white text-indigo-700 px-4 py-2 flex items-center gap-2 cursor-pointer hover:bg-indigo-100 no-underline">
+                <i data-lucide="log-out"></i>
+                <span class="font-medium">Logout</span>
+            </a>
+        </div>
+    </nav>
+
+    <!-- Sidebar + Content -->
+    <div class="flex p-10">
+        <div class="w-56 bg-slate-900 text-indigo-300 p-6 rounded-2xl shadow-lg mr-6">
+            <h3 class="text-white text-lg font-semibold mb-6">Vendor Operations</h3>
+            <button onclick="addVendor()"
+                class="w-full rounded-full bg-indigo-100 text-indigo-700 py-2 mb-4 font-medium hover:bg-indigo-200 transition duration-200 flex items-center justify-center gap-2">
+                <i data-lucide="plus"></i> Add Vendor
+            </button>
+            <button onclick="editVendor()"
+                class="w-full rounded-full bg-indigo-100 text-indigo-700 py-2 mb-4 font-medium hover:bg-indigo-200 transition duration-200 flex items-center justify-center gap-2">
+                <i data-lucide="edit"></i> Edit Vendor
+            </button>
+            <button onclick="deleteVendor()"
+                class="w-full rounded-full bg-indigo-100 text-indigo-700 py-2 mb-4 font-medium hover:bg-indigo-200 transition duration-200 flex items-center justify-center gap-2">
+                <i data-lucide="trash"></i> Delete Vendor
+            </button>
+            <button onclick="loadVendors()"
+                class="w-full rounded-full bg-indigo-100 text-indigo-700 py-2 font-medium hover:bg-indigo-200 transition duration-200 flex items-center justify-center gap-2">
+                <i data-lucide="list"></i> View Vendors
+            </button>
+        </div>
+
+        <div class="flex-1 bg-slate-900 text-indigo-300 p-6 rounded-2xl shadow-lg">
+            <h2 class="text-white text-xl font-semibold mb-6">Vendor List</h2>
+            <table class="w-full border-collapse" id="vendorTable">
+                <thead>
+                    <tr class="bg-[#333A5c]">
+                        <th class="p-3 text-left text-white text-sm font-semibold">ID</th>
+                        <th class="p-3 text-left text-white text-sm font-semibold">Name</th>
+                        <th class="p-3 text-left text-white text-sm font-semibold">Contact Person</th>
+                        <th class="p-3 text-left text-white text-sm font-semibold">Email</th>
+                        <th class="p-3 text-left text-white text-sm font-semibold">Phone</th>
+                        <th class="p-3 text-left text-white text-sm font-semibold">Address</th>
+                        <th class="p-3 text-left text-white text-sm font-semibold">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="vendorTableBody">
+                    <!-- Vendor rows will be added here -->
+                </tbody>
+            </table>
+            <!-- Add Vendor Modal -->
+            <div id="addVendorModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+                <div class="bg-slate-900 text-indigo-300 p-6 rounded-2xl w-96">
+                    <h3 class="text-white text-lg font-semibold mb-4">Add New Vendor</h3>
+                    <form id="addVendorForm">
+                        <input type="text" name="name" placeholder="Name" required
+                            class="w-full rounded-full px-4 py-2 text-sm text-white bg-[#333A5c] border-none outline-none mb-3" />
+                        <input type="text" name="contactPerson" placeholder="Contact Person" required
+                            class="w-full rounded-full px-4 py-2 text-sm text-white bg-[#333A5c] border-none outline-none mb-3" />
+                        <input type="email" name="email" placeholder="Email" required
+                            class="w-full rounded-full px-4 py-2 text-sm text-white bg-[#333A5c] border-none outline-none mb-3" />
+                        <input type="text" name="phone" placeholder="Phone" required
+                            class="w-full rounded-full px-4 py-2 text-sm text-white bg-[#333A5c] border-none outline-none mb-3" />
+                        <textarea name="address" placeholder="Address" required
+                            class="w-full rounded-xl px-4 py-2 text-sm text-white bg-[#333A5c] border-none outline-none mb-3"></textarea>
+                        <div class="flex justify-end gap-3">
+                            <button type="button" onclick="closeAddModal()"
+                                class="rounded-full bg-gray-600 text-white py-2 px-4 font-medium hover:bg-gray-700">Cancel</button>
+                            <button type="submit"
+                                class="rounded-full bg-gradient-to-r from-indigo-400 to-indigo-900 text-white py-2 px-4 font-medium hover:opacity-90">Add</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Edit Vendor Modal -->
+            <div id="editVendorModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+                <div class="bg-slate-900 text-indigo-300 p-6 rounded-2xl w-96">
+                    <h3 class="text-white text-lg font-semibold mb-4">Edit Vendor</h3>
+                    <form id="editVendorForm">
+                        <input type="hidden" name="id" />
+                        <input type="text" name="name" placeholder="Name" required
+                            class="w-full rounded-full px-4 py-2 text-sm text-white bg-[#333A5c] border-none outline-none mb-3" />
+                        <input type="text" name="contactPerson" placeholder="Contact Person" required
+                            class="w-full rounded-full px-4 py-2 text-sm text-white bg-[#333A5c] border-none outline-none mb-3" />
+                        <input type="email" name="email" placeholder="Email" required
+                            class="w-full rounded-full px-4 py-2 text-sm text-white bg-[#333A5c] border-none outline-none mb-3" />
+                        <input type="text" name="phone" placeholder="Phone" required
+                            class="w-full rounded-full px-4 py-2 text-sm text-white bg-[#333A5c] border-none outline-none mb-3" />
+                        <textarea name="address" placeholder="Address" required
+                            class="w-full rounded-xl px-4 py-2 text-sm text-white bg-[#333A5c] border-none outline-none mb-3"></textarea>
+                        <div class="flex justify-end gap-3">
+                            <button type="button" onclick="closeEditModal()"
+                                class="rounded-full bg-gray-600 text-white py-2 px-4 font-medium hover:bg-gray-700">Cancel</button>
+                            <button type="submit"
+                                class="rounded-full bg-gradient-to-r from-indigo-400 to-indigo-900 text-white py-2 px-4 font-medium hover:opacity-90">Update</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        lucide.createIcons();
+
+        if (localStorage.getItem("isAdmin") !== "true") {
+            window.location.href = "index.html";
+        }
+
+        function logout() {
+            localStorage.removeItem("isAdmin");
+            alert("Logged out successfully.");
+            window.location.href = "index.html";
+        }
+
+        async function loadVendors() {
+            try {
+                const response = await fetch('http://localhost:3010/api/vendors');
+                const vendors = await response.json();
+
+                const tableBody = document.querySelector("#vendorTable tbody");
+                tableBody.innerHTML = '';
+
+                vendors.forEach(vendor => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td class="p-3 text-sm">${vendor.id}</td>
+                        <td class="p-3 text-sm">${vendor.name}</td>
+                        <td class="p-3 text-sm">${vendor.contactPerson}</td>
+                        <td class="p-3 text-sm">${vendor.email}</td>
+                        <td class="p-3 text-sm">${vendor.phone}</td>
+                        <td class="p-3 text-sm">${vendor.address}</td>
+                        <td class="p-3">
+                            <button onclick="openEditModal(${vendor.id})" class="text-indigo-300 hover:text-indigo-400 mr-4">
+                                <i data-lucide="edit"></i>
+                            </button>
+                            <button onclick="deleteVendor(${vendor.id})" class="text-red-300 hover:text-red-400">
+                                <i data-lucide="trash"></i>
+                            </button>
+                        </td>
+                    `;
+                    tableBody.appendChild(row);
+                });
+                lucide.createIcons();
+            } catch (error) {
+                console.error('Failed to load vendors:', error);
+            }
+        }
+
+        function addVendor() {
+            document.getElementById('addVendorModal').style.display = 'flex';
+        }
+
+        function closeAddModal() {
+            document.getElementById('addVendorModal').style.display = 'none';
+            document.getElementById('addVendorForm').reset();
+        }
+
+        document.getElementById('addVendorForm').addEventListener('submit', async function (e) {
+            e.preventDefault();
+            const form = e.target;
+            const data = {
+                name: form.name.value,
+                contactPerson: form.contactPerson.value,
+                email: form.email.value,
+                phone: form.phone.value,
+                address: form.address.value
+            };
+
+            try {
+                const response = await fetch('http://localhost:3010/api/vendors', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+
+                if (response.ok) {
+                    alert("Vendor added successfully!");
+                    closeAddModal();
+                    loadVendors();
+                } else {
+                    alert("Failed to add vendor.");
+                }
+            } catch (err) {
+                console.error("Error adding vendor:", err);
+                alert("Error occurred.");
+            }
+        });
+
+        async function openEditModal(id) {
+            try {
+                const response = await fetch(`http://localhost:3010/api/vendors/${id}`);
+                const vendor = await response.json();
+
+                const form = document.getElementById('editVendorForm');
+                form.id.value = vendor.id;
+                form.name.value = vendor.name;
+                form.contactPerson.value = vendor.contactPerson;
+                form.email.value = vendor.email;
+                form.phone.value = vendor.phone;
+                form.address.value = vendor.address;
+
+                document.getElementById('editVendorModal').style.display = 'flex';
+            } catch (err) {
+                console.error("Error loading vendor for edit:", err);
+                alert("Failed to load vendor.");
+            }
+        }
+
+        function closeEditModal() {
+            document.getElementById('editVendorModal').style.display = 'none';
+            document.getElementById('editVendorForm').reset();
+        }
+
+        document.getElementById('editVendorForm').addEventListener('submit', async function (e) {
+            e.preventDefault();
+            const form = e.target;
+            const id = form.id.value;
+            const data = {
+                name: form.name.value,
+                contactPerson: form.contactPerson.value,
+                email: form.email.value,
+                phone: form.phone.value,
+                address: form.address.value
+            };
+
+            try {
+                const response = await fetch(`http://localhost:3010/api/vendors/${id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+
+                if (response.ok) {
+                    alert("Vendor updated successfully!");
+                    closeEditModal();
+                    loadVendors();
+                } else {
+                    alert("Failed to update vendor.");
+                }
+            } catch (err) {
+                console.error("Error updating vendor:", err);
+                alert("Error occurred.");
+            }
+        });
+
+        async function deleteVendor(id) {
+            if (!confirm("Are you sure you want to delete this vendor?")) return;
+
+            try {
+                const response = await fetch(`http://localhost:3010/api/vendors/${id}`, {
+                    method: 'DELETE'
+                });
+
+                if (response.ok) {
+                    alert("Vendor deleted!");
+                    loadVendors();
+                } else {
+                    alert("Failed to delete vendor.");
+                }
+            } catch (err) {
+                console.error("Error deleting vendor:", err);
+                alert("Error occurred.");
+            }
+        }
+
+        window.onload = loadVendors;
+    </script>
+</body>
+
+</html>

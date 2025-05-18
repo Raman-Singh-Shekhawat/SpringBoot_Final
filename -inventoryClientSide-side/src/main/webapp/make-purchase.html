@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Make Purchase</title>
+    <script src="https://unpkg.com/@tailwindcss/browser@4"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+
+<body class="min-h-screen bg-gradient-to-br from-blue-200 to-purple-400 text-white font-sans">
+    <!-- Navigation Bar -->
+    <nav class="bg-slate-900 flex items-center justify-between px-8 py-4 shadow-lg">
+        <div class="text-2xl font-semibold text-white">Admin Panel</div>
+        <div class="flex items-center gap-4">
+            <a href="make-purchase.html"
+                class="rounded-full bg-white text-indigo-700 px-4 py-2 flex items-center gap-2 cursor-pointer hover:bg-indigo-100 no-underline">
+                <i data-lucide="shopping-bag"></i>
+                <span class="font-medium">Make Purchase</span>
+            </a>
+            <a href="invoices.html"
+                class="rounded-full bg-white text-indigo-700 px-4 py-2 flex items-center gap-2 cursor-pointer hover:bg-indigo-100 no-underline">
+                <i data-lucide="file-text"></i>
+                <span class="font-medium">Invoices</span>
+            </a>
+            <a href="admin-products.html"
+                class="rounded-full bg-white text-indigo-700 px-4 py-2 flex items-center gap-2 cursor-pointer hover:bg-indigo-100 no-underline">
+                <i data-lucide="package"></i>
+                <span class="font-medium">Product</span>
+            </a>
+            <a href="vendors.html"
+                class="rounded-full bg-white text-indigo-700 px-4 py-2 flex items-center gap-2 cursor-pointer hover:bg-indigo-100 no-underline">
+                <i data-lucide="store"></i>
+                <span class="font-medium">Vendor</span>
+            </a>
+            <a href="#" onclick="logout()"
+                class="rounded-full bg-white text-indigo-700 px-4 py-2 flex items-center gap-2 cursor-pointer hover:bg-indigo-100 no-underline">
+                <i data-lucide="log-out"></i>
+                <span class="font-medium">Logout</span>
+            </a>
+        </div>
+    </nav>
+
+    <!-- Purchase Form -->
+    <div class="max-w-4xl mx-auto p-10">
+        <div class="bg-slate-900 text-indigo-300 p-6 rounded-2xl shadow-lg">
+            <h2 class="text-white text-xl font-semibold mb-6">Make a Purchase</h2>
+
+            <div class="mb-6">
+                <label for="vendor" class="text-sm text-indigo-300">Select Vendor:</label>
+                <select id="vendor" class="w-full rounded-full px-4 py-2 text-sm text-white bg-[#333A5c] border-none outline-none mt-2" required>
+                    <option value="">Loading vendors...</option>
+                </select>
+            </div>
+
+            <div id="items-container" class="mb-6"></div>
+
+            <div class="flex gap-3">
+                <button class="rounded-full bg-indigo-100 text-indigo-700 py-2 px-4 font-medium hover:bg-indigo-200 transition duration-200"
+                    onclick="addItem()">+ Add Item</button>
+                <button class="rounded-full bg-gradient-to-r from-indigo-400 to-indigo-900 py-2 px-4 font-medium tracking-wide text-white hover:opacity-90"
+                    onclick="submitPurchase()">Submit Purchase</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        if (localStorage.getItem("isAdmin") !== "true") {
+            window.location.href = "index.html";
+        }
+
+        function logout() {
+            localStorage.removeItem("isAdmin");
+            alert("Logged out successfully.");
+            window.location.href = "index.jsp";
+        }
+
+        fetch("http://localhost:3010/api/vendors")
+            .then(res => res.json())
+            .then(data => {
+                const vendorSelect = document.getElementById("vendor");
+                vendorSelect.innerHTML = '<option value="">-- Choose Vendor --</option>';
+                data.forEach(vendor => {
+                    const option = document.createElement("option");
+                    option.value = vendor.id;
+                    option.textContent = `${vendor.name} (${vendor.contactPerson})`;
+                    vendorSelect.appendChild(option);
+                });
+            })
+            .catch(err => {
+                alert("Failed to load vendors.");
+                console.error(err);
+            });
+
+        function addItem() {
+            const container = document.getElementById("items-container");
+
+            const itemDiv = document.createElement("div");
+            itemDiv.classList.add("item-form", "relative", "grid", "grid-cols-2", "gap-3", "bg-[#333A5c]", "p-6", "pt-10", "rounded-xl", "mb-4");
+
+            itemDiv.innerHTML = `
+                <i class="remove-icon absolute top-2 right-2 text-red-300 hover:text-red-400 cursor-pointer transition-transform hover:scale-125" data-lucide="x" onclick="removeItem(this)"></i>
+                <input type="text" placeholder="Item Name" class="name col-span-2 rounded-full px-4 py-2 text-sm text-white bg-slate-900 border-none outline-none" required />
+                <input type="number" placeholder="Quantity" class="qty rounded-full px-4 py-2 text-sm text-white bg-slate-900 border-none outline-none" min="1" required />
+                <input type="number" placeholder="Price" class="price rounded-full px-4 py-2 text-sm text-white bg-slate-900 border-none outline-none" min="0" step="0.01" required />
+                <textarea placeholder="Description" class="desc col-span-2 rounded-xl px-4 py-2 text-sm text-white bg-slate-900 border-none outline-none" rows="2" required></textarea>
+            `;
+
+            container.appendChild(itemDiv);
+            lucide.createIcons();
+        }
+
+        function removeItem(button) {
+            const item = button.closest(".item-form");
+            item.remove();
+        }
+
+        function submitPurchase() {
+            const vendorId = document.getElementById("vendor").value;
+            if (!vendorId) {
+                alert("Please select a vendor.");
+                return;
+            }
+
+            const items = [];
+            const forms = document.querySelectorAll(".item-form");
+
+            for (const form of forms) {
+                const name = form.querySelector(".name").value.trim();
+                const description = form.querySelector(".desc").value.trim();
+                const quantity = parseInt(form.querySelector(".qty").value);
+                const price = parseFloat(form.querySelector(".price").value);
+
+                if (!name || !description || !quantity || !price) {
+                    alert("Please fill out all item fields.");
+                    return;
+                }
+
+                items.push({ name, description, quantity, price, vendorId: parseInt(vendorId) });
+            }
+
+            if (items.length === 0) {
+                alert("Please add at least one item.");
+                return;
+            }
+
+            fetch("http://localhost:3010/api/items/batch", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(items)
+            })
+                .then(res => res.ok ? res.json() : Promise.reject(res))
+                .then(data => {
+                    alert("Purchase submitted successfully!");
+                    window.location.href = "admin-products.html";
+                })
+                .catch(err => {
+                    console.error(err);
+                    alert("Error submitting purchase.");
+                });
+        }
+
+        lucide.createIcons();
+    </script>
+</body>
+
+</html>
